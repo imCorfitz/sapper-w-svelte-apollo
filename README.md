@@ -1,3 +1,10 @@
+# sapper-w-svelte-apollo
+Note - This is built on top of the sapper-start opinionated template by @matt3224.
+Implementing support for Svelte-Apollo in order to use GraphQL.
+
+https://github.com/timhall/svelte-apollo/issues/29
+
+
 # sapper-start
 
 An opinionated starter template based on the rollup [sapper-template](https://github.com/sveltejs/sapper-template/tree/rollup). To clone it and get started:
@@ -36,4 +43,4 @@ Here are the differences:
 ## Bugs and feedback
 
 If you run into an issue which you don't see in the normal sapper-template, open an [issue](https://github.com/matt3224/sapper-start/issues).
-# sapper-w-svelte-apollo
+
