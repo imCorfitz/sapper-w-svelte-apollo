@@ -1,9 +1,17 @@
+<svelte:head>
+   <meta name="version" content="pkg.version">
+</svelte:head>
+
 <main>
-	<slot></slot>
+   <slot {segment} />
 </main>
 
-<script>
-	export let segment;
+<script lang="ts">
+  import client from '../lib/apollo'
+  import { setClient } from "svelte-apollo";
+  setClient(client);
+
+   export let segment: string;
 </script>
 
 <style lang="scss">

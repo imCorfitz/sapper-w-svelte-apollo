@@ -1,116 +1,139 @@
-import resolve from 'rollup-plugin-node-resolve';
-import replace from 'rollup-plugin-replace';
-import commonjs from 'rollup-plugin-commonjs';
+/* Rollup plugins */
+import alias from '@rollup/plugin-alias';
+import babel from '@rollup/plugin-babel';
+import commonjs from '@rollup/plugin-commonjs';
+import replace from '@rollup/plugin-replace';
+import resolve from '@rollup/plugin-node-resolve';
+import url from '@rollup/plugin-url';
 import svelte from 'rollup-plugin-svelte';
-import babel from 'rollup-plugin-babel';
 import { terser } from 'rollup-plugin-terser';
-import config from 'sapper/config/rollup.js';
-import pkg from './package.json';
 import sveltePreprocess from 'svelte-preprocess';
+import typescript from '@rollup/plugin-typescript';
+import autoPreprocess from 'svelte-preprocess'
+
+/* Packages */
 import autoprefixer from 'autoprefixer';
-import alias from 'rollup-plugin-alias';
+import config from 'sapper/config/rollup.js';
+import 'dotenv/config';
 import path from 'path';
+import pkg from './package.json';
+import { scss, postcss } from 'svelte-preprocess';
 
-const onwarn = (warning, onwarn) =>
-  (warning.code === 'CIRCULAR_DEPENDENCY' &&
-    /[/\\]@sapper[/\\]/.test(warning.message)) ||
-  onwarn(warning);
-
+/* Assignments */
 const mode = process.env.NODE_ENV;
 const dev = mode === 'development';
 const legacy = !!process.env.SAPPER_LEGACY_BUILD;
 
-const preprocess = sveltePreprocess({
-   transformers: {
-      scss: { sourceMap: false },
-      postcss: { plugins: [ autoprefixer ] }
-   }
+const onwarn = (warning, onwarn) =>
+	(warning.code === 'MISSING_EXPORT' && /'preload'/.test(warning.message)) ||
+	(warning.code === 'CIRCULAR_DEPENDENCY' && /[/\\]@sapper[/\\]/.test(warning.message)) ||
+	(warning.code === 'THIS_IS_UNDEFINED') ||
+	onwarn(warning);
+
+const customResolver = resolve({
+   extensions: ['.js', '.mjs', '.html', '.svelte', '.scss', '.json']
 });
 
 const aliasconfig = {
-   resolve: ['.js', '.mjs', '.html', '.svelte'],
-   entries:[{
-      find:'~',
-      replacement: path.join(__dirname, './src')
-   }]
+   customResolver,
+   entries: [{ find: '~', replacement: path.join(__dirname, './src') }]
 };
 
+const preprocess = [
+   scss({ sourceMap: false }),
+   postcss({ plugins: [ autoprefixer ] }),
+    autoPreprocess()
+];
+
+const replaceconfig = {
+   'process.browser': true,
+   'process.env.NODE_ENV': JSON.stringify(mode),
+   'pkg.version': pkg.version
+};
+
+/* Config */
 export default {
-	client: {
-		input: config.client.input(),
-		output: config.client.output(),
-		plugins: [
-			replace({
-				'process.browser': true,
-				'process.env.NODE_ENV': JSON.stringify(mode)
-			}),
-			svelte({
-				dev,
-				hydratable: true,
-				emitCss: true,
+
+   client: {
+      input: config.client.input().replace(/\.js$/, '.ts'),
+      output: config.client.output(),
+      onwarn,
+      plugins: [
+         alias(aliasconfig),
+         commonjs(),
+			typescript({ sourceMap: dev }),
+         customResolver,
+         replace(replaceconfig),
+         resolve({ browser: true, dedupe: ['svelte'] }),
+         svelte({
+            dev,
+            hydratable: true,
+				preprocess: sveltePreprocess(),
+            emitCss: true,
             preprocess
-			}),
-      resolve({ preferBuiltins: true, mainFields: ['browser'] }),
-			commonjs(),
+         }),
+         url({
+            sourceDir: path.resolve(__dirname, 'src/node_modules/images'),
+            publicPath: '/client/'
+         }),
+         legacy && babel({
+            exclude: ['node_modules/@babel/**'],
+            extensions: ['.js', '.mjs', '.html', '.svelte'],
+            plugins: [
+               '@babel/plugin-syntax-dynamic-import',
+               ['@babel/plugin-transform-runtime', {
+                  useESModules: true
+               }]
+            ],
+            presets: [['@babel/preset-env']],
+            babelHelpers: 'runtime',
+         }),
+
+         !dev && terser({ module: true, numWorkers: 1 })
+      ],
+      preserveEntrySignatures: false
+   },
+
+   server: {
+      input: { server: config.server.input().server.replace(/\.js$/, ".ts") },
+      output: config.server.output(),
+      onwarn,
+      plugins: [
          alias(aliasconfig),
-
-			legacy && babel({
-				extensions: ['.js', '.mjs', '.html', '.svelte'],
-				runtimeHelpers: true,
-				exclude: ['node_modules/@babel/**'],
-				presets: [['@babel/preset-env']],
-				plugins: [
-					'@babel/plugin-syntax-dynamic-import',
-					['@babel/plugin-transform-runtime', {
-						useESModules: true
-					}]
-				]
-			}),
-
-			!dev && terser({
-				module: true,
-            numWorkers: 1
-			})
-		],
-    onwarn,
-	},
-
-	server: {
-		input: config.server.input(),
-		output: config.server.output(),
-		plugins: [
-			replace({
-				'process.browser': false,
-				'process.env.NODE_ENV': JSON.stringify(mode)
-			}),
-			svelte({
-				generate: 'ssr',
-				dev,
+         commonjs(),
+			typescript({ sourceMap: dev }),
+         customResolver,
+         replace({...replaceconfig, 'process.browser': false}),
+         resolve({ dedupe: ['svelte'] }),
+         svelte({
+            dev,
+            generate: 'ssr',
+            hydratable: true,
             preprocess
-			}),
-			resolve(),
-			commonjs(),
-         alias(aliasconfig),
-		],
-		external: Object.keys(pkg.dependencies).concat(
-			require('module').builtinModules || Object.keys(process.binding('natives'))
-		),
-    onwarn,
-	},
+         }),
+         url({
+            sourceDir: path.resolve(__dirname, 'src/node_modules/images'),
+            publicPath: '/client/',
+            emitFiles: false // already emitted by client build
+         }),
+      ],
+      external: Object.keys(pkg.dependencies).concat(require('module').builtinModules),
+      preserveEntrySignatures: 'strict'
+   },
 
-	serviceworker: {
-		input: config.serviceworker.input(),
-		output: config.serviceworker.output(),
-		plugins: [
-			resolve(),
-			replace({
-				'process.browser': true,
-				'process.env.NODE_ENV': JSON.stringify(mode)
-			}),
-			commonjs(),
+   serviceworker: {
+      input: config.serviceworker.input().replace(/\.js$/, '.ts'),
+      output: config.serviceworker.output(),
+      onwarn,
+      plugins: [
          alias(aliasconfig),
-			!dev && terser({numWorkers: 1})
-		],
-    onwarn,
-	}
+         commonjs(),
+			typescript({ sourceMap: dev }),
+         customResolver,
+         replace(replaceconfig),
+         resolve(),
+         !dev && terser({ numWorkers: 1 })
+      ],
+      preserveEntrySignatures: false
+   }
 };

@@ -1,19 +1,17 @@
-@import '../node_modules/@creativelittledots/reboot/reboot.scss';
+@import '../node_modules/@neuekit/reboot';
 
-html,
-body {
-    font-family: -apple-system,
-                 BlinkMacSystemFont,
-                 "Segoe UI",
-                 Helvetica
-                 Arial,
-                 sans-serif,
-                 "Apple Color Emoji",
-                 "Segoe UI Emoji",
-                 "Segoe UI Symbol";
-    -webkit-font-smoothing: antialiased;
+html {
+   font-family: -apple-system,
+                BlinkMacSystemFont,
+                Segoe UI,
+                Helvetica,
+                Arial,
+                sans-serif,
+                Apple Color Emoji,
+                Segoe UI Emoji;
+   -webkit-font-smoothing: antialiased;
 }
 
 a {
-    text-decoration: none;
+   text-decoration: none;
 }
