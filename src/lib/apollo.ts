@@ -1,20 +1,18 @@
-
 import {ApolloClient, createHttpLink, InMemoryCache} from '@apollo/client';
-
+import fetch from 'cross-fetch'
 
 // Instantiate required constructor fields
 const cache = new InMemoryCache();
-const link = createHttpLink({
-  uri: 'http://localhost:4000/',
+const link =  createHttpLink({
+    uri: 'https://graphqlzero.almansi.me/api',
+    fetch,
 });
 
 export default new ApolloClient({
   // Provide required constructor fields
-  cache: cache,
-  link: link,
-
+  cache,
+  link,
   // Provide some optional constructor fields
-  name: 'react-web-client',
   version: '1.3',
   queryDeduplication: false,
   defaultOptions: {

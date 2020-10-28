@@ -9,7 +9,7 @@ import svelte from 'rollup-plugin-svelte';
 import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
-import autoPreprocess from 'svelte-preprocess'
+import autoPreprocess from 'svelte-preprocess';
 
 /* Packages */
 import autoprefixer from 'autoprefixer';
@@ -59,12 +59,11 @@ export default {
       output: config.client.output(),
       onwarn,
       plugins: [
+          resolve({ browser: true, dedupe: ['svelte'] }),
          alias(aliasconfig),
          commonjs(),
-			typescript({ sourceMap: dev }),
          customResolver,
          replace(replaceconfig),
-         resolve({ browser: true, dedupe: ['svelte'] }),
          svelte({
             dev,
             hydratable: true,
@@ -89,6 +88,7 @@ export default {
             babelHelpers: 'runtime',
          }),
 
+          typescript({ sourceMap: dev }),
          !dev && terser({ module: true, numWorkers: 1 })
       ],
       preserveEntrySignatures: false
@@ -98,13 +98,12 @@ export default {
       input: { server: config.server.input().server.replace(/\.js$/, ".ts") },
       output: config.server.output(),
       onwarn,
-      plugins: [
+       plugins: [
+           resolve({ dedupe: ['svelte'] }),
          alias(aliasconfig),
          commonjs(),
-			typescript({ sourceMap: dev }),
          customResolver,
          replace({...replaceconfig, 'process.browser': false}),
-         resolve({ dedupe: ['svelte'] }),
          svelte({
             dev,
             generate: 'ssr',
@@ -116,6 +115,8 @@ export default {
             publicPath: '/client/',
             emitFiles: false // already emitted by client build
          }),
+
+          typescript({ sourceMap: dev }),
       ],
       external: Object.keys(pkg.dependencies).concat(require('module').builtinModules),
       preserveEntrySignatures: 'strict'
