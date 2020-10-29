@@ -1,14 +1,22 @@
 <script lang="ts">
-  import { query } from "svelte-apollo";
+  import { mutation, query } from "svelte-apollo";
   import { gql } from "@apollo/client";
   const EVERYTHING = gql`
     {
-      todos {
+      todos(options: { sort: { field: "id" }, paginate: { limit: 12 } }) {
         data {
           id
           title
           completed
         }
+      }
+    }
+  `;
+
+  const ADD = gql`
+    mutation {
+      createTodo(input: { title: "test 123", completed: false }) {
+        id
       }
     }
   `;
@@ -19,6 +27,17 @@
 
   function reload() {
     todos.refetch();
+  }
+
+  const addTodo = mutation(ADD);
+
+  async function add() {
+    try {
+      await addTodo({});
+    } catch (error) {
+      // TODO
+      console.log(error);
+    }
   }
 </script>
 
@@ -35,3 +54,4 @@
 </ul>
 
 <button on:click={reload}>Reload</button>
+<button on:click={add}>Add</button>
