@@ -1,6 +1,6 @@
 <script context="module" lang="ts">
   import client from "../lib/apollo";
-  import { gql } from "@apollo/client";
+  import { gql } from "@apollo/client/core";
 
   const EVERYTHING = gql`
     {
